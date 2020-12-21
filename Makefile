@@ -45,7 +45,7 @@ GENCODE_SM52  := -gencode arch=compute_52,code=sm_52
 GENCODE_SM60  := -gencode arch=compute_60,code=sm_60
 GENCODE_SM75  := -gencode arch=compute_75,code=sm_75
 GENCODE_FLAGS := $(GENCODE_SM35) $(GENCODE_SM52) $(GENCODE_SM60) $(GENCODE_SM75)
-GENCODE_FLAGS :=
+GENCODE_FLAGS := $(NVCC_GENCODE)
 
 #######################################################
 

@@ -28,16 +28,31 @@ SOFTWARE.
 #include <stdio.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <string>
+#include <stdexcept>
+
+#define S(x) #x
+#define S_(x) S(x)
+#define S__LINE__ S_(__LINE__)
+#define FULL_MASK 0xffffffff
+
 
 //
 // Error checking wrapper for CUDA
 //
-#define cudaCheck(stmt) do {                                 \
+#define cudaCheck(stmt) do {                         \
 	cudaError_t err = stmt;                            \
   if (err != cudaSuccess) {                          \
-	  fprintf(stderr, "%s in file %s, function %s\n", #stmt,__FILE__,__FUNCTION__); \
-    fprintf(stderr, "Error String: %s\n", cudaGetErrorString(err)); \
-	  exit(1); \
+    std::string msg = #stmt;        \
+    msg += " in file ";             \
+    msg += __FILE__;                \
+    msg += ":";                     \
+    msg += S__LINE__;               \
+    msg += ", function ";           \
+    msg += __FUNCTION__;            \
+    msg += "\nError message: ";     \
+    msg += cudaGetErrorString(err); \
+	  throw std::runtime_error(msg);  \
   }                                                  \
 } while(0)
 

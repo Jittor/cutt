@@ -58,7 +58,7 @@ __global__ void checkTransposeKernel(T* data, unsigned int ndata, int rank, Tens
     T dataValT = (i < ndata) ? data[i] : -1;
     int refVal = 0;
     for (int j=0;j < rank;j++) {
-      refVal += ((i/__shfl(tc.c,j)) % __shfl(tc.d,j))*__shfl(tc.ct,j);
+      refVal += ((i/__shfl_sync(FULL_MASK, tc.c,j)) % __shfl_sync(FULL_MASK, tc.d,j))*__shfl_sync(FULL_MASK, tc.ct,j);
     }
 
     int dataVal = (dataValT & 0xffffffff)/(sizeof(T)/4);
