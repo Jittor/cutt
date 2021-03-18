@@ -58,7 +58,7 @@ void getDeviceProp(int& deviceID, cudaDeviceProp &prop) {
 
 cuttResult cuttPlanCheckInput(int rank, int* dim, int* permutation, size_t sizeofType) {
   // Check sizeofType
-  if (sizeofType != 4 && sizeofType != 8) return CUTT_INVALID_PARAMETER;
+  if (sizeofType != 4 && sizeofType != 8 && sizeofType != 1 && sizeofType != 2) return CUTT_INVALID_PARAMETER;
   // Check rank
   if (rank <= 1) return CUTT_INVALID_PARAMETER;
   // Check dim[]

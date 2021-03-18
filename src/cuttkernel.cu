@@ -550,7 +550,7 @@ void cuttKernelSetSharedMemConfig() {
 // NOTE: Not thread safe
 const int CACHE_SIZE = 100000;
 const int MAX_NUMWARP = (1024/32);
-const int MAX_NUMTYPE = 2;
+const int MAX_NUMTYPE = 8;
 static int numDevices = -1;
 LRUCache<unsigned long long int, int> nabCache(CACHE_SIZE, -1);
 
@@ -576,7 +576,7 @@ int getNumActiveBlock(const int method, const int sizeofType, const LaunchConfig
   cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numActiveBlock, \
     transposePacked<TYPE, NREG>, numthread, lc.shmemsize)
       switch(lc.numRegStorage) {
-#define CALL(ICASE) case ICASE: if (sizeofType == 4) CALL0(float,  ICASE); if (sizeofType == 8) CALL0(double, ICASE); break
+#define CALL(ICASE) case ICASE: if (sizeofType == 4) CALL0(float,  ICASE); if (sizeofType == 8) CALL0(double, ICASE); if (sizeofType == 1) CALL0(uint8_t, ICASE); if (sizeofType == 2) CALL0(uint16_t, ICASE); break
 #include "calls.h"
       }
 #undef CALL
@@ -597,7 +597,7 @@ int getNumActiveBlock(const int method, const int sizeofType, const LaunchConfig
         exit(1);
       }
       int key_reg = (lc.numRegStorage - 1);
-      int key_type = (sizeofType == 4);
+      int key_type = sizeofType-1;
       unsigned long long int key = 
       (unsigned long long int)(lc.shmemsize/sizeofType)*MAX_NUMWARP*MAX_REG_STORAGE*MAX_NUMTYPE*numDevices + 
       (unsigned long long int)deviceID*MAX_NUMWARP*MAX_REG_STORAGE*MAX_NUMTYPE +
@@ -612,7 +612,7 @@ int getNumActiveBlock(const int method, const int sizeofType, const LaunchConfig
   cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numActiveBlock, \
     transposePackedSplit<TYPE, NREG>, numthread, lc.shmemsize)
       switch(lc.numRegStorage) {
-#define CALL(ICASE) case ICASE: if (sizeofType == 4) CALL0(float,  ICASE); if (sizeofType == 8) CALL0(double, ICASE); break
+#define CALL(ICASE) case ICASE: if (sizeofType == 4) CALL0(float,  ICASE); if (sizeofType == 8) CALL0(double, ICASE); if (sizeofType == 1) CALL0(uint8_t, ICASE); if (sizeofType == 2) CALL0(uint16_t, ICASE); break
 #include "calls.h"
       }
 #undef CALL
@@ -627,6 +627,14 @@ int getNumActiveBlock(const int method, const int sizeofType, const LaunchConfig
       if (sizeofType == 4) {
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numActiveBlock,
           transposeTiled<float>, numthread, lc.shmemsize);
+      } 
+      if (sizeofType == 1) {
+        cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numActiveBlock,
+          transposeTiled<uint8_t>, numthread, lc.shmemsize);
+      } 
+      if (sizeofType == 2) {
+        cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numActiveBlock,
+          transposeTiled<uint16_t>, numthread, lc.shmemsize);
       } else {
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numActiveBlock,
           transposeTiled<double>, numthread, lc.shmemsize);
@@ -639,6 +647,14 @@ int getNumActiveBlock(const int method, const int sizeofType, const LaunchConfig
       if (sizeofType == 4) {
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numActiveBlock,
           transposeTiledCopy<float>, numthread, lc.shmemsize);
+      } 
+      if (sizeofType == 1) {
+        cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numActiveBlock,
+          transposeTiledCopy<uint8_t>, numthread, lc.shmemsize);
+      } 
+      if (sizeofType == 2) {
+        cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numActiveBlock,
+          transposeTiledCopy<uint16_t>, numthread, lc.shmemsize);
       } else {
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numActiveBlock,
           transposeTiledCopy<double>, numthread, lc.shmemsize);
@@ -856,7 +872,7 @@ bool cuttKernel(cuttPlan_t& plan, void* dataIn, void* dataOut) {
     transposePacked<TYPE, NREG> <<< lc.numblock, lc.numthread, lc.shmemsize, plan.stream >>> \
       (ts.volMmk, ts.volMbar, ts.sizeMmk, ts.sizeMbar, \
       plan.Mmk, plan.Mbar, plan.Msh, (TYPE *)dataIn, (TYPE *)dataOut)
-#define CALL(ICASE) case ICASE: if (plan.sizeofType == 4) CALL0(float,  ICASE); if (plan.sizeofType == 8) CALL0(double, ICASE); break
+#define CALL(ICASE) case ICASE: if (plan.sizeofType == 4) CALL0(float,  ICASE); if (plan.sizeofType == 8) CALL0(double, ICASE);  if (plan.sizeofType == 1) CALL0(uint8_t, ICASE);  if (plan.sizeofType == 2) CALL0(uint16_t, ICASE); break
 #include "calls.h"
         default:
         printf("cuttKernel no template implemented for numRegStorage %d\n", lc.numRegStorage);
@@ -875,7 +891,7 @@ bool cuttKernel(cuttPlan_t& plan, void* dataIn, void* dataOut) {
       transposePackedSplit<TYPE, NREG> <<< lc.numblock, lc.numthread, lc.shmemsize, plan.stream >>> \
       (ts.splitDim, ts.volMmkUnsplit, ts. volMbar, ts.sizeMmk, ts.sizeMbar, \
         plan.cuDimMm, plan.cuDimMk, plan.Mmk, plan.Mbar, plan.Msh, (TYPE *)dataIn, (TYPE *)dataOut);
-#define CALL(ICASE) case ICASE: if (plan.sizeofType == 4) CALL0(float,  ICASE); if (plan.sizeofType == 8) CALL0(double, ICASE); break
+#define CALL(ICASE) case ICASE: if (plan.sizeofType == 4) CALL0(float,  ICASE); if (plan.sizeofType == 8) CALL0(double, ICASE); if (plan.sizeofType == 1) CALL0(uint8_t, ICASE); if (plan.sizeofType == 2) CALL0(uint16_t, ICASE); break
 #include "calls.h"
         default:
         printf("cuttKernel no template implemented for numRegStorage %d\n", lc.numRegStorage);
@@ -895,6 +911,8 @@ bool cuttKernel(cuttPlan_t& plan, void* dataIn, void* dataOut) {
         plan.Mbar, (TYPE *)dataIn, (TYPE *)dataOut)
       if (plan.sizeofType == 4) CALL(float);
       if (plan.sizeofType == 8) CALL(double);
+      if (plan.sizeofType == 1) CALL(uint8_t);
+      if (plan.sizeofType == 2) CALL(uint16_t);
 #undef CALL
     }
     break;
@@ -907,6 +925,8 @@ bool cuttKernel(cuttPlan_t& plan, void* dataIn, void* dataOut) {
         plan.Mbar, (TYPE *)dataIn, (TYPE *)dataOut)
       if (plan.sizeofType == 4) CALL(float);
       if (plan.sizeofType == 8) CALL(double);
+      if (plan.sizeofType == 1) CALL(uint8_t);
+      if (plan.sizeofType == 2) CALL(uint16_t);
 #undef CALL
     }
     break;
