@@ -173,8 +173,18 @@ void cutt_malloc(void** p, size_t len, size_t& allocation);
 
 void cutt_free(void* p, size_t len, size_t& allocation);
 
-extern void (*custom_cuda_malloc)(void** p, size_t len, size_t& allocation);
+#ifdef _MSC_VER
+#define STACK_ALLOC(T, a, n) T* a = (T*)_alloca(sizeof(T)*(n))
+#define EXTERN_LIB extern __declspec(dllimport)
+#define EXPORT_LIB __declspec(dllimport)
+#else
+#define STACK_ALLOC(T, a, n) T a[n]
+#define EXTERN_LIB extern
+#define EXPORT_LIB 
+#endif
 
-extern void (*custom_cuda_free)(void* p, size_t len, size_t& allocation);
+EXTERN_LIB void (*custom_cuda_malloc)(void** p, size_t len, size_t& allocation);
+
+EXTERN_LIB void (*custom_cuda_free)(void* p, size_t len, size_t& allocation);
 
 #endif // CUDAUTILS_H

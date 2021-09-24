@@ -399,7 +399,9 @@ void countPackedGlTransactions0(const int warpSize, const int accWidth, const in
   int& gld_tran, int& gst_tran, int& gld_req, int& gst_req,
   int& cl_full_l2, int& cl_part_l2, int& cl_full_l1, int& cl_part_l1) {
 
-#ifdef NO_ALIGNED_ALLOC
+#ifdef _WIN32
+  int_vector* writeSegVolMmk = (int_vector *)_aligned_malloc(volMmk*sizeof(int_vector), sizeof(int_vector));
+#elif defined(NO_ALIGNED_ALLOC)
   int_vector* writeSegVolMmk = (int_vector *)aligned_malloc(volMmk*sizeof(int_vector), sizeof(int_vector));
 #else
   int_vector* writeSegVolMmk = (int_vector *)aligned_alloc(sizeof(int_vector), volMmk*sizeof(int_vector));
@@ -464,7 +466,9 @@ void countPackedGlTransactions0(const int warpSize, const int accWidth, const in
   cl_part_l1 += cl_part_tmp;
 #endif
 
-#ifdef NO_ALIGNED_ALLOC
+#ifdef _WIN32
+  _aligned_free(writeSegVolMmk);
+#elif defined(NO_ALIGNED_ALLOC)
   aligned_free(writeSegVolMmk);
 #else
   free(writeSegVolMmk);
